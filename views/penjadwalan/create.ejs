@@ -1,0 +1,33 @@
+<h1>Tambah Jadwal Perangkat</h1>
+
+<form action="/penjadwalan/create" method="POST">
+  <div class="mb-3">
+    <label for="perangkat_id" class="form-label">Perangkat</label>
+    <select name="perangkat_id" id="perangkat_id" class="form-select" required>
+      <option value="">-- Pilih Perangkat --</option>
+      <% perangkatList.forEach(p => { %>
+        <option value="<%= p.id %>"><%= p.nama_perangkat %></option>
+      <% }) %>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label for="waktu_nyala" class="form-label">Waktu Nyala</label>
+    <input type="datetime-local" name="waktu_nyala" id="waktu_nyala" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="waktu_mati" class="form-label">Waktu Mati</label>
+    <input type="datetime-local" name="waktu_mati" id="waktu_mati" class="form-control" required>
+  </div>
+
+  <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" name="aktif" id="aktif" value="1" checked>
+    <label class="form-check-label" for="aktif">
+      Jadwal Aktif
+    </label>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Simpan</button>
+  <a href="/penjadwalan" class="btn btn-secondary">Batal</a>
+</form>

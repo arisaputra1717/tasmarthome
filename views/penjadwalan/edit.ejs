@@ -1,0 +1,37 @@
+<h1>Edit Jadwal Perangkat</h1>
+
+<form action="/penjadwalan/edit/<%= jadwal.id %>" method="POST">
+  <div class="mb-3">
+    <label for="perangkat_id" class="form-label">Perangkat</label>
+    <select name="perangkat_id" id="perangkat_id" class="form-select" required>
+      <% perangkatList.forEach(p => { %>
+        <option value="<%= p.id %>" <%= p.id === jadwal.perangkat_id ? 'selected' : '' %>>
+          <%= p.nama_perangkat %>
+        </option>
+      <% }) %>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label for="waktu_nyala" class="form-label">Waktu Nyala</label>
+    <input type="datetime-local" name="waktu_nyala" id="waktu_nyala" class="form-control"
+      value="<%= new Date(jadwal.waktu_nyala).toISOString().slice(0, 16) %>" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="waktu_mati" class="form-label">Waktu Mati</label>
+    <input type="datetime-local" name="waktu_mati" id="waktu_mati" class="form-control"
+      value="<%= new Date(jadwal.waktu_mati).toISOString().slice(0, 16) %>" required>
+  </div>
+
+  <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" name="aktif" id="aktif" value="1"
+      <%= jadwal.aktif ? 'checked' : '' %>>
+    <label class="form-check-label" for="aktif">
+      Jadwal Aktif
+    </label>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Update</button>
+  <a href="/penjadwalan" class="btn btn-secondary">Batal</a>
+</form>

@@ -1,0 +1,41 @@
+<h1>Tambah Perangkat</h1>
+<form action="/perangkat/create" method="POST">
+  <div class="mb-3">
+    <label>Nama Perangkat</label>
+    <input name="nama_perangkat" class="form-control" required />
+  </div>
+
+  <div class="mb-3">
+    <label>Topik Data (MQTT)</label>
+    <input name="topik_mqtt" class="form-control" required />
+  </div>
+
+  <div class="mb-3">
+    <label>Topik Kontrol (MQTT)</label>
+    <input name="topik_kontrol" class="form-control" placeholder="(opsional)" />
+  </div>
+
+  <div class="mb-3">
+    <label>Prioritas</label>
+    <select name="prioritas" class="form-select">
+      <option value="Tinggi">Tinggi</option>
+      <option value="Sedang">Sedang</option>
+      <option value="Rendah">Rendah</option>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label>Daya (Watt)</label>
+    <input type="number" name="daya_watt" class="form-control" required />
+  </div>
+
+  <div class="mb-3">
+    <label>Status</label>
+    <select name="status" class="form-select">
+      <option value="ON">ON</option>
+      <option value="OFF">OFF</option>
+    </select>
+  </div>
+
+  <button class="btn btn-primary">Simpan</button>
+</form>

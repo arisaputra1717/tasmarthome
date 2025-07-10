@@ -1,0 +1,47 @@
+<h2>Laporan Energi Berdasarkan Limit</h2>
+
+<form method="get" class="mb-3">
+  <label>Pilih Periode Limit:</label>
+  <select name="limit_id" onchange="this.form.submit()" class="form-select">
+    <% limitList.forEach(l => { %>
+      <option value="<%= l.id %>" <%= l.id == selectedId ? 'selected' : '' %>>
+        <%= new Date(l.jam_mulai).toLocaleString() %> - <%= new Date(l.jam_selesai).toLocaleString() %> (Batas: <%= l.batas_kwh %> kWh)
+      </option>
+    <% }) %>
+  </select>
+</form>
+
+<% if (limitInfo) { %>
+  <div class="alert alert-info">
+    Terpakai: <strong><%= limitInfo.terpakai.toFixed(2) %></strong> kWh dari <%= limitInfo.batas %> kWh
+    (<%= limitInfo.persen %>%) — <strong><%= limitInfo.status %></strong>
+  </div>
+<% } %>
+
+<a href="/laporan/export/excel?limit_id=<%= selectedId %>" class="btn btn-success">Export Excel</a>
+<a href="/laporan/export/pdf?limit_id=<%= selectedId %>" class="btn btn-danger">Export PDF</a>
+
+<table class="table table-bordered table-striped mt-3">
+  <thead>
+    <tr>
+      <th>Tanggal</th>
+      <th>ID Perangkat</th>
+      <th>Volt</th>
+      <th>Ampere</th>
+      <th>Watt</th>
+      <th>Energy Δ (kWh)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% data.forEach(row => { %>
+      <tr>
+        <td><%= new Date(row.timestamp).toLocaleString() %></td>
+        <td><%= row.perangkat_id %></td>
+        <td><%= row.volt %></td>
+        <td><%= row.ampere %></td>
+        <td><%= row.watt %></td>
+        <td><%= row.energy_delta %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>

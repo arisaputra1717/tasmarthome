@@ -1,0 +1,57 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1>Daftar Penjadwalan</h1>
+  <a href="/penjadwalan/create" class="btn btn-primary">+ Tambah Jadwal</a>
+</div>
+
+<p class="text-muted">Total: <%= penjadwalan.length %> jadwal</p>
+
+<table class="table table-bordered table-striped">
+  <thead class="table-light">
+    <tr>
+      <th>#</th>
+      <th>Perangkat</th>
+      <th>Waktu Nyala</th>
+      <th>Waktu Mati</th>
+      <th>Status</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (penjadwalan.length === 0) { %>
+      <tr>
+        <td colspan="6" class="text-center">Belum ada jadwal</td>
+      </tr>
+    <% } else { %>
+      <% penjadwalan.forEach((jadwal, index) => { %>
+        <tr>
+          <td><%= index + 1 %></td>
+          <td><%= jadwal.Perangkat?.nama_perangkat || '-' %></td>
+          <td>
+            <%= new Date(jadwal.waktu_nyala).toLocaleString('id-ID', {
+              dateStyle: 'short',
+              timeStyle: 'short'
+            }) %>
+          </td>
+          <td>
+            <%= new Date(jadwal.waktu_mati).toLocaleString('id-ID', {
+              dateStyle: 'short',
+              timeStyle: 'short'
+            }) %>
+          </td>
+          <td>
+            <span class="badge <%= jadwal.aktif ? 'bg-success' : 'bg-secondary' %>">
+              <%= jadwal.aktif ? 'Aktif' : 'Nonaktif' %>
+            </span>
+          </td>
+          <td>
+            <a href="/penjadwalan/edit/<%= jadwal.id %>" class="btn btn-sm btn-warning">Edit</a>
+            <form action="/penjadwalan/delete/<%= jadwal.id %>" method="POST" class="d-inline"
+              onsubmit="return confirm('Yakin ingin menghapus jadwal ini?')">
+              <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    <% } %>
+  </tbody>
+</table>
