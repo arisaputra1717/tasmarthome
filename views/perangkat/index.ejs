@@ -1,0 +1,34 @@
+<h1>Daftar Perangkat</h1>
+<a href="/perangkat/create" class="btn btn-primary mb-3">+ Tambah Perangkat</a>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Nama</th>
+            <th>Topik Data</th>
+            <th>Topik Kontrol</th>
+            <th>Prioritas</th>
+            <th>Daya (Watt)</th>
+            <th>Status</th>
+            <th>Aksi</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% perangkat.forEach(p => { %>
+            <tr>
+                <td><%= p.nama_perangkat %></td>
+                <td><%= p.topik_mqtt %></td>
+                <td><%= p.topik_kontrol || '-' %></td>
+                <td><%= p.prioritas || '-' %></td>
+                <td><%= p.daya_watt || '-' %></td>
+                <td><%= p.status || '-' %></td>
+                <td>
+                    <a href="/perangkat/edit/<%= p.id %>" class="btn btn-sm btn-warning">Edit</a>
+                    <form action="/perangkat/delete/<%= p.id %>" method="POST" style="display:inline-block">
+                        <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus data ini?')">Hapus</button>
+                    </form>
+                </td>
+            </tr>
+        <% }) %>
+    </tbody>
+</table>

@@ -1,0 +1,149 @@
+<div class="py-4">
+  <h1 class="mb-4">Dashboard Pemantauan Energi</h1>
+
+  <% let persenLimit=null; if (limit) { persenLimit=Math.min(100, Math.round((totalEnergiHariIni / limit.batas_kwh) *
+    100)); %>
+    <div id="limit-container" class="alert alert-warning d-flex justify-content-between align-items-center" style="display: none;">
+      <div>
+        Periode Limit: <br>
+        <strong>
+          <%= new Date(limit.jam_mulai).toLocaleString('id-ID') %>
+        </strong>
+        s/d
+        <strong>
+          <%= new Date(limit.jam_selesai).toLocaleString('id-ID') %>
+        </strong><br>
+        Total Pemakaian: <strong>
+          <%= totalEnergiHariIni.toFixed(2) %> kWh
+        </strong><br>
+        Batas Energi: <strong>
+          <%= limit.batas_kwh %> kWh
+        </strong>
+      </div>
+      <div style="width: 250px;">
+        <div class="progress" style="height: 15px;">
+          <div class="progress-bar bg-<%= persenLimit < 60 ? 'success' : persenLimit < 80 ? 'warning' : 'danger' %>"
+            role="progressbar" style="width: <%= persenLimit %>%;">
+            <%= persenLimit %>%
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- ✅ Informasi Status Limit -->
+    <% if (limit && persenLimit) { %>
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> Status Kontrol Berdasarkan Limit:</h6>
+            <ul class="mb-0">
+              <li><strong>60-79%:</strong> Perangkat prioritas <span class="badge bg-secondary">Rendah</span> diblokir</li>
+              <li><strong>80-99%:</strong> Perangkat prioritas <span class="badge bg-warning">Sedang</span> dan <span class="badge bg-secondary">Rendah</span> diblokir</li>
+              <li><strong>100%+:</strong> Semua perangkat termasuk <span class="badge bg-danger">Tinggi</span> diblokir</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+      <% dataTerbaru.forEach(function(item) { %>
+        <div class="col">
+          <div class="card h-100 border-<%= item.perangkat.prioritas === 'Tinggi' ? 'danger' : item.perangkat.prioritas === 'Sedang' ? 'warning' : 'secondary' %>">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <div>
+                <strong><%= item.perangkat.nama_perangkat %></strong><br>
+                <small class="text-muted">Prioritas: <%= item.perangkat.prioritas %></small><br>
+                <small class="text-muted">Penjadwalan: <%= item.perangkat.penjadwalan_aktif ? 'Aktif' : 'Tidak' %></small>
+                
+                <!-- ✅ Indikator Pemblokiran Limit -->
+                <% if (item.perangkat.diblokir_limit) { %>
+                  <br><small class="text-danger"><i class="fas fa-ban"></i> Diblokir oleh limit energi</small>
+                <% } %>
+              </div>
+              <span class="badge rounded-pill bg-<%= item.perangkat.status === 'ON' ? 'success' : 'danger' %>">
+                <i class="fas fa-circle me-1"></i>
+                <%= item.perangkat.status %>
+              </span>
+            </div>
+
+            <div class="card-body">
+              <% if (item.perangkat.penjadwalan_aktif) { %>
+                <div class="alert alert-warning p-1 mb-2 text-center">
+                  <i class="fas fa-clock me-1"></i> Perangkat dikendalikan oleh jadwal
+                </div>
+              <% } %>
+
+              <!-- ✅ Peringatan Limit -->
+              <% if (item.perangkat.diblokir_limit) { %>
+                <div class="alert alert-danger p-1 mb-2 text-center">
+                  <i class="fas fa-exclamation-triangle me-1"></i> Tidak dapat dinyalakan karena limit energi
+                </div>
+              <% } %>
+
+              <div class="d-flex gap-2 mt-2 mb-3">
+                <!-- ✅ Tombol ON - Disabled jika diblokir limit -->
+                <button type="button"
+                  class="btn btn-<%= item.perangkat.status === 'ON' ? 'success' : 'outline-success' %> btn-sm flex-fill"
+                  data-device-id="<%= item.perangkat.id %>" 
+                  data-command="ON"
+                  data-penjadwalan="<%= item.perangkat.penjadwalan_aktif ? 'true' : 'false' %>"
+                  <% if (item.perangkat.diblokir_limit) { %>
+                    disabled
+                    title="Tidak dapat dinyalakan karena limit energi tercapai"
+                  <% } else { %>
+                    title="<%= item.perangkat.penjadwalan_aktif ? 'Akan override jadwal' : 'Kontrol manual' %>"
+                  <% } %>>
+                  <i class="fas fa-power-off me-1"></i> ON
+                </button>
+
+                <!-- ✅ Tombol OFF - Selalu aktif -->
+                <button type="button"
+                  class="btn btn-<%= item.perangkat.status === 'OFF' ? 'danger' : 'outline-danger' %> btn-sm flex-fill"
+                  data-device-id="<%= item.perangkat.id %>" 
+                  data-command="OFF"
+                  data-penjadwalan="<%= item.perangkat.penjadwalan_aktif ? 'true' : 'false' %>"
+                  title="<%= item.perangkat.penjadwalan_aktif ? 'Akan override jadwal' : 'Kontrol manual' %>">
+                  <i class="fas fa-power-off me-1"></i> OFF
+                </button>
+              </div>
+
+              <hr>
+              <% if (item.data) { %>
+                <p>Tegangan: <strong id="volt-<%= item.perangkat.id %>"><%= item.data.volt %></strong> V</p>
+                <p>Arus: <strong id="ampere-<%= item.perangkat.id %>"><%= item.data.ampere %></strong> A</p>
+                <p>Daya: <strong id="watt-<%= item.perangkat.id %>"><%= item.data.watt %></strong> W</p>
+                <p>Energi: <strong id="energy-<%= item.perangkat.id %>"><%= item.data.energy %></strong> kWh</p>
+              <% } else { %>
+                <p class="text-muted">Belum ada data</p>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+</div>
+
+<!-- Modal Konfirmasi -->
+<div class="modal fade" id="modalKonfirmasiManual" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-warning">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="modalLabel">Konfirmasi Kontrol Manual</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+      <div class="modal-body">
+        Perangkat ini sedang dikendalikan oleh <strong>penjadwalan otomatis</strong>.<br>
+        Apakah Anda yakin ingin mengubah status perangkat secara manual?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary" id="btnKonfirmasiManual">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/dashboard.js"></script>

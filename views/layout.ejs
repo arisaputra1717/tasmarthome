@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>
+    <%= title %>
+  </title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm mb-4">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/">
+        <i class="fas fa-bolt me-1"></i> SmartEnergy
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="mainNavbar">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link <% if (title.includes('Dashboard')) { %>active<% } %>" href="/">
+              <i class="fas fa-chart-line me-1"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link <% if (title.includes('Perangkat')) { %>active<% } %>" href="/perangkat">
+              <i class="fas fa-plug me-1"></i> Perangkat
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link <% if (title.includes('Penjadwalan')) { %>active<% } %>" href="/penjadwalan">
+              <i class="fas fa-clock me-1"></i> Penjadwalan
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link <% if (title.includes('Limit')) { %>active<% } %>" href="/limit">
+              <i class="fas fa-battery-three-quarters me-1"></i> Limit Energi
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link <% if (title.includes('Statistik')) { %>active<% } %>" href="/statistic">
+              <i class="fas fa-chart-pie me-1"></i> Statistik
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link <% if (title.includes('Laporan')) { %>active<% } %>" href="/laporan">
+              <i class="fas fa-file-alt me-1"></i> Laporan
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Konten Utama -->
+  <div class="container">
+    <% if (typeof message !=='undefined' && message) { %>
+      <div class="alert alert-info">
+        <%= message %>
+      </div>
+      <% } %>
+
+        <%- body %>
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

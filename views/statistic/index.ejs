@@ -1,0 +1,55 @@
+<div class="container py-4">
+    <h3 class="mb-3"><i class="bi bi-bar-chart-line"></i> Statistik Energi</h3>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <canvas id="chartEnergi"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <p>Total Energi Hari Ini: <strong id="totalEnergi">...</strong> kWh</p>
+            <p>Limit KWH: <strong id="limitKwh">...</strong> kWh</p>
+            <p>Persentase Penggunaan: <strong id="percent">...</strong></p>
+            <p>Status: <strong id="status">...</strong></p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    async function fetchChartData() {
+        const res = await fetch('/statistic/data');
+        const data = await res.json();
+
+        document.getElementById('totalEnergi').textContent = data.total;
+        document.getElementById('limitKwh').textContent = data.limit;
+        document.getElementById('percent').textContent = data.percent + '%';
+        document.getElementById('status').textContent = data.status;
+
+        const ctx = document.getElementById('chartEnergi').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Energi (kWh)',
+                    data: data.values,
+                    backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 2,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    fetchChartData();
+</script>
