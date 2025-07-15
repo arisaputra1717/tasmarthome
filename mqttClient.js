@@ -169,7 +169,7 @@ async function matikanBerdasarkanPrioritas(level, client) {
   }
 }
 
-// ✅ Penjadwalan otomatis tiap 60 detik
+// Contoh revisi blok penjadwalan otomatis di mqttClient.js
 setInterval(async () => {
   const now = new Date();
 
@@ -183,9 +183,21 @@ setInterval(async () => {
     });
 
     const perangkatAktif = jadwalAktif.map(j => j.perangkat_id);
+
     const semuaPerangkat = await Perangkat.findAll();
 
     for (const perangkat of semuaPerangkat) {
+      // ✅ Periksa apakah perangkat punya penjadwalan terdaftar
+      const punyaJadwal = await Penjadwalan.findOne({
+        where: { perangkat_id: perangkat.id }
+      });
+
+      if (!punyaJadwal) {
+        // ✅ Perangkat tanpa jadwal → tidak dikontrol otomatis
+        console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tanpa penjadwalan`);
+        continue;
+      }
+
       const dalamJadwal = perangkatAktif.includes(perangkat.id);
 
       if (dalamJadwal && perangkat.status !== 'ON') {
@@ -197,7 +209,7 @@ setInterval(async () => {
             console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
           }
         } else {
-          console.log(`⚠️ [JADWAL] ${perangkat.nama_perangkat} diblokir karena limit, tidak bisa ON`);
+          console.log(`⚠️ [JADWAL] ${perangkat.nama_perangkat} diblokir limit, tidak bisa ON`);
         }
       }
 
@@ -214,6 +226,5 @@ setInterval(async () => {
   } catch (err) {
     console.error('❌ Gagal eksekusi penjadwalan:', err.message);
   }
-}, 60 * 1000); // tiap 60 detik
-
+}, 60 * 1000);
 module.exports = client;
