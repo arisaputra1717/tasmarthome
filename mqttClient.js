@@ -3,7 +3,7 @@ const mqtt = require('mqtt');
 const { Perangkat, DataPenggunaan, LimitEnergi, Penjadwalan } = require('./models');
 const { Op } = require('sequelize');
 
-const client = mqtt.connect(process.env.MQTT_BROKER || 'mqtt://broker.emqx.io:1883', {
+const client = mqtt.connect(process.env.MQTT_BROKER || 'mqtt://192.168.18.116:1883', {
   clientId: 'smart-energy-client-' + Math.random().toString(16).substr(2, 8),
   clean: true,
   connectTimeout: 4000,
