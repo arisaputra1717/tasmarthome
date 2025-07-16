@@ -134,41 +134,33 @@ client.on('message', async (topic, message) => {
 // ✅ Fungsi untuk mematikan berdasarkan prioritas STRING
 async function matikanBerdasarkanPrioritas(level, client) {
   let prioritasArray;
-  
-  // Mapping level ke prioritas yang akan dimatikan
   switch(level) {
-    case 3: // 60% - matikan prioritas 'Rendah'
-      prioritasArray = ['Rendah'];
-      break;
-    case 2: // 80% - matikan prioritas 'Sedang' dan 'Rendah'  
-      prioritasArray = ['Sedang', 'Rendah'];
-      break;
-    case 1: // 100% - matikan semua prioritas
-      prioritasArray = ['Tinggi', 'Sedang', 'Rendah'];
-      break;
-    default:
-      return;
+    case 3: prioritasArray = ['Rendah']; break;
+    case 2: prioritasArray = ['Sedang', 'Rendah']; break;
+    case 1: prioritasArray = ['Tinggi', 'Sedang', 'Rendah']; break;
+    default: return;
   }
 
-  const perangkatList = await Perangkat.findAll({
-    where: {
-      prioritas: { [Op.in]: prioritasArray }, // Gunakan Op.in untuk array string
-      status: 'ON'
+  const semuaPerangkat = await Perangkat.findAll();
+
+  for (const perangkat of semuaPerangkat) {
+    const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id, aktif: true } });
+
+    if (!punyaJadwal) {
+      console.log(`✅ [LIMIT BYPASS] ${perangkat.nama_perangkat} tidak punya jadwal, tidak dikontrol limit energi.`);
+      continue;
     }
-  });
 
-  for (const perangkat of perangkatList) {
-    await perangkat.update({ status: 'OFF' });
-    perangkatTerblokir.add(perangkat.id);
-
-    if (perangkat.topik_kontrol) {
-      client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
-      console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat}) - Prioritas: ${perangkat.prioritas}`);
-    } else {
-      console.warn(`⚠️ Tidak ada topik_kontrol untuk ${perangkat.nama_perangkat}`);
+    if (prioritasArray.includes(perangkat.prioritas) && perangkat.status === 'ON') {
+      await perangkat.update({ status: 'OFF' });
+      if (perangkat.topik_kontrol) {
+        client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
+        console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+      }
     }
   }
 }
+
 
 // ✅ Penjadwalan otomatis tiap 60 detik
 setInterval(async () => {
@@ -187,24 +179,25 @@ setInterval(async () => {
     const semuaPerangkat = await Perangkat.findAll();
 
     for (const perangkat of semuaPerangkat) {
+      const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id, aktif: true } });
+
+      if (!punyaJadwal) {
+        console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tidak punya jadwal, tidak dikontrol penjadwalan.`);
+        continue;
+      }
+
       const dalamJadwal = perangkatAktif.includes(perangkat.id);
 
       if (dalamJadwal && perangkat.status !== 'ON') {
-        if (!perangkatTerblokir.has(perangkat.id)) {
-          await perangkat.update({ status: 'ON' });
-
-          if (perangkat.topik_kontrol) {
-            client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
-            console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
-          }
-        } else {
-          console.log(`⚠️ [JADWAL] ${perangkat.nama_perangkat} diblokir karena limit, tidak bisa ON`);
+        await perangkat.update({ status: 'ON' });
+        if (perangkat.topik_kontrol) {
+          client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
+          console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
         }
       }
 
       if (!dalamJadwal && perangkat.status !== 'OFF') {
         await perangkat.update({ status: 'OFF' });
-
         if (perangkat.topik_kontrol) {
           client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
           console.log(`📤 [JADWAL] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
@@ -215,6 +208,5 @@ setInterval(async () => {
   } catch (err) {
     console.error('❌ Gagal eksekusi penjadwalan:', err.message);
   }
-}, 60 * 1000); // tiap 60 detik
-
+}, 60 * 1000);
 module.exports = client;
