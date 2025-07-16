@@ -169,7 +169,7 @@ async function matikanBerdasarkanPrioritas(level, client) {
   }
 }
 
-// Contoh revisi blok penjadwalan otomatis di mqttClient.js
+// Revisi logika penjadwalan dan limit energi sesuai permintaan
 setInterval(async () => {
   const now = new Date();
 
@@ -183,46 +183,33 @@ setInterval(async () => {
     });
 
     const perangkatAktif = jadwalAktif.map(j => j.perangkat_id);
-
     const semuaPerangkat = await Perangkat.findAll();
 
     for (const perangkat of semuaPerangkat) {
-      // ✅ Periksa apakah perangkat punya penjadwalan terdaftar
-      const punyaJadwal = await Penjadwalan.findOne({
-        where: { perangkat_id: perangkat.id }
-      });
-
-      if (!punyaJadwal) {
-        // ✅ Perangkat tanpa jadwal → tidak dikontrol otomatis
-        console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tanpa penjadwalan`);
-        continue;
-      }
-
+      const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id } });
       const dalamJadwal = perangkatAktif.includes(perangkat.id);
 
-      if (dalamJadwal && perangkat.status !== 'ON') {
-        if (!perangkatTerblokir.has(perangkat.id)) {
-          await perangkat.update({ status: 'ON' });
-
-          if (perangkat.topik_kontrol) {
-            client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
-            console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+      if (punyaJadwal) {
+        if (dalamJadwal && perangkat.status !== 'ON') {
+          if (!perangkatTerblokir.has(perangkat.id)) {
+            await perangkat.update({ status: 'ON' });
+            if (perangkat.topik_kontrol) {
+              client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
+              console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+            }
           }
-        } else {
-          console.log(`⚠️ [JADWAL] ${perangkat.nama_perangkat} diblokir limit, tidak bisa ON`);
         }
-      }
-
-      if (!dalamJadwal && perangkat.status !== 'OFF') {
-        await perangkat.update({ status: 'OFF' });
-
-        if (perangkat.topik_kontrol) {
-          client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
-          console.log(`📤 [JADWAL] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+        if (!dalamJadwal && perangkat.status !== 'OFF') {
+          await perangkat.update({ status: 'OFF' });
+          if (perangkat.topik_kontrol) {
+            client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
+            console.log(`📤 [JADWAL] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+          }
         }
+      } else {
+        console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tidak punya jadwal, kontrol manual.`);
       }
     }
-
   } catch (err) {
     console.error('❌ Gagal eksekusi penjadwalan:', err.message);
   }
