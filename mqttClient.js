@@ -1,9 +1,10 @@
+
 require('dotenv').config();
 const mqtt = require('mqtt');
 const { Perangkat, DataPenggunaan, LimitEnergi, Penjadwalan } = require('./models');
 const { Op } = require('sequelize');
 
-const client = mqtt.connect(process.env.MQTT_BROKER || 'mqtt://192.168.18.116:1883', {
+const client = mqtt.connect(process.env.MQTT_BROKER || 'mqtt://broker.emqx.io:1883', {
   clientId: 'smart-energy-client-' + Math.random().toString(16).substr(2, 8),
   clean: true,
   connectTimeout: 4000,
@@ -130,30 +131,46 @@ client.on('message', async (topic, message) => {
   }
 });
 
-// Revisi limit energi: perangkat dengan atau tanpa jadwal tetap dihitung energinya, dan semua perangkat bisa dimatikan oleh limit
+// ✅ Fungsi untuk mematikan berdasarkan prioritas STRING
 async function matikanBerdasarkanPrioritas(level, client) {
   let prioritasArray;
+  
+  // Mapping level ke prioritas yang akan dimatikan
   switch(level) {
-    case 3: prioritasArray = ['Rendah']; break;
-    case 2: prioritasArray = ['Sedang', 'Rendah']; break;
-    case 1: prioritasArray = ['Tinggi', 'Sedang', 'Rendah']; break;
-    default: return;
+    case 3: // 60% - matikan prioritas 'Rendah'
+      prioritasArray = ['Rendah'];
+      break;
+    case 2: // 80% - matikan prioritas 'Sedang' dan 'Rendah'  
+      prioritasArray = ['Sedang', 'Rendah'];
+      break;
+    case 1: // 100% - matikan semua prioritas
+      prioritasArray = ['Tinggi', 'Sedang', 'Rendah'];
+      break;
+    default:
+      return;
   }
 
-  const semuaPerangkat = await Perangkat.findAll();
+  const perangkatList = await Perangkat.findAll({
+    where: {
+      prioritas: { [Op.in]: prioritasArray }, // Gunakan Op.in untuk array string
+      status: 'ON'
+    }
+  });
 
-  for (const perangkat of semuaPerangkat) {
-    if (prioritasArray.includes(perangkat.prioritas) && perangkat.status === 'ON') {
-      await perangkat.update({ status: 'OFF' });
-      perangkatTerblokir.add(perangkat.id);
-      if (perangkat.topik_kontrol) {
-        client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
-        console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat}) - Prioritas: ${perangkat.prioritas}`);
-      }
+  for (const perangkat of perangkatList) {
+    await perangkat.update({ status: 'OFF' });
+    perangkatTerblokir.add(perangkat.id);
+
+    if (perangkat.topik_kontrol) {
+      client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
+      console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat}) - Prioritas: ${perangkat.prioritas}`);
+    } else {
+      console.warn(`⚠️ Tidak ada topik_kontrol untuk ${perangkat.nama_perangkat}`);
     }
   }
 }
 
+// ✅ Penjadwalan otomatis tiap 60 detik
 setInterval(async () => {
   const now = new Date();
 
@@ -170,33 +187,34 @@ setInterval(async () => {
     const semuaPerangkat = await Perangkat.findAll();
 
     for (const perangkat of semuaPerangkat) {
-      const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id } });
       const dalamJadwal = perangkatAktif.includes(perangkat.id);
 
-      if (punyaJadwal) {
-        if (dalamJadwal && perangkat.status !== 'ON') {
-          if (!perangkatTerblokir.has(perangkat.id)) {
-            await perangkat.update({ status: 'ON' });
-            if (perangkat.topik_kontrol) {
-              client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
-              console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
-            }
-          }
-        }
-        if (!dalamJadwal && perangkat.status !== 'OFF') {
-          await perangkat.update({ status: 'OFF' });
+      if (dalamJadwal && perangkat.status !== 'ON') {
+        if (!perangkatTerblokir.has(perangkat.id)) {
+          await perangkat.update({ status: 'ON' });
+
           if (perangkat.topik_kontrol) {
-            client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
-            console.log(`📤 [JADWAL] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+            client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
+            console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
           }
+        } else {
+          console.log(`⚠️ [JADWAL] ${perangkat.nama_perangkat} diblokir karena limit, tidak bisa ON`);
         }
-      } else {
-        console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tidak punya jadwal, kontrol manual.`);
-        // ✅ Tidak mengubah status perangkat tanpa jadwal
+      }
+
+      if (!dalamJadwal && perangkat.status !== 'OFF') {
+        await perangkat.update({ status: 'OFF' });
+
+        if (perangkat.topik_kontrol) {
+          client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
+          console.log(`📤 [JADWAL] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+        }
       }
     }
+
   } catch (err) {
     console.error('❌ Gagal eksekusi penjadwalan:', err.message);
   }
-}, 60 * 1000);
+}, 60 * 1000); // tiap 60 detik
+
 module.exports = client;
