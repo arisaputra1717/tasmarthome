@@ -130,46 +130,30 @@ client.on('message', async (topic, message) => {
   }
 });
 
-// ✅ Fungsi untuk mematikan berdasarkan prioritas STRING
+// Revisi limit energi: perangkat dengan atau tanpa jadwal tetap dihitung energinya, dan semua perangkat bisa dimatikan oleh limit
 async function matikanBerdasarkanPrioritas(level, client) {
   let prioritasArray;
-  
-  // Mapping level ke prioritas yang akan dimatikan
   switch(level) {
-    case 3: // 60% - matikan prioritas 'Rendah'
-      prioritasArray = ['Rendah'];
-      break;
-    case 2: // 80% - matikan prioritas 'Sedang' dan 'Rendah'  
-      prioritasArray = ['Sedang', 'Rendah'];
-      break;
-    case 1: // 100% - matikan semua prioritas
-      prioritasArray = ['Tinggi', 'Sedang', 'Rendah'];
-      break;
-    default:
-      return;
+    case 3: prioritasArray = ['Rendah']; break;
+    case 2: prioritasArray = ['Sedang', 'Rendah']; break;
+    case 1: prioritasArray = ['Tinggi', 'Sedang', 'Rendah']; break;
+    default: return;
   }
 
-  const perangkatList = await Perangkat.findAll({
-    where: {
-      prioritas: { [Op.in]: prioritasArray }, // Gunakan Op.in untuk array string
-      status: 'ON'
-    }
-  });
+  const semuaPerangkat = await Perangkat.findAll();
 
-  for (const perangkat of perangkatList) {
-    await perangkat.update({ status: 'OFF' });
-    perangkatTerblokir.add(perangkat.id);
-
-    if (perangkat.topik_kontrol) {
-      client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
-      console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat}) - Prioritas: ${perangkat.prioritas}`);
-    } else {
-      console.warn(`⚠️ Tidak ada topik_kontrol untuk ${perangkat.nama_perangkat}`);
+  for (const perangkat of semuaPerangkat) {
+    if (prioritasArray.includes(perangkat.prioritas) && perangkat.status === 'ON') {
+      await perangkat.update({ status: 'OFF' });
+      perangkatTerblokir.add(perangkat.id);
+      if (perangkat.topik_kontrol) {
+        client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
+        console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat}) - Prioritas: ${perangkat.prioritas}`);
+      }
     }
   }
 }
 
-// Revisi logika penjadwalan dan limit energi sesuai permintaan
 setInterval(async () => {
   const now = new Date();
 
@@ -208,6 +192,7 @@ setInterval(async () => {
         }
       } else {
         console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tidak punya jadwal, kontrol manual.`);
+        // ✅ Tidak mengubah status perangkat tanpa jadwal
       }
     }
   } catch (err) {
