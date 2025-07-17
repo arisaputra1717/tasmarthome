@@ -209,4 +209,19 @@ setInterval(async () => {
     console.error('❌ Gagal eksekusi penjadwalan:', err.message);
   }
 }, 60 * 1000);
-module.exports = client;
+// ✅ Fungsi untuk subscribe ulang topik perangkat setelah penambahan
+async function subscribeTopikBaru() {
+  const perangkatList = await Perangkat.findAll();
+  perangkatList.forEach(({ topik_mqtt, nama_perangkat }) => {
+    if (topik_mqtt) {
+      client.subscribe(topik_mqtt, (err) => {
+        if (!err) {
+          console.log(`✅ [AUTO SUBSCRIBE] ${nama_perangkat} : ${topik_mqtt}`);
+        }
+      });
+    }
+  });
+}
+
+// ✅ Export fungsi agar bisa dipakai controller
+module.exports = { client, subscribeTopikBaru };
