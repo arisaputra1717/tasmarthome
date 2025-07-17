@@ -187,12 +187,18 @@ setInterval(async () => {
     const semuaPerangkat = await Perangkat.findAll();
 
     for (const perangkat of semuaPerangkat) {
+      const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id, aktif: true } });
+
+      if (!punyaJadwal) {
+        console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tidak punya jadwal, tidak dikontrol penjadwalan.`);
+        continue;
+      }
+
       const dalamJadwal = perangkatAktif.includes(perangkat.id);
 
       if (dalamJadwal && perangkat.status !== 'ON') {
         if (!perangkatTerblokir.has(perangkat.id)) {
           await perangkat.update({ status: 'ON' });
-
           if (perangkat.topik_kontrol) {
             client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
             console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
@@ -204,7 +210,6 @@ setInterval(async () => {
 
       if (!dalamJadwal && perangkat.status !== 'OFF') {
         await perangkat.update({ status: 'OFF' });
-
         if (perangkat.topik_kontrol) {
           client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
           console.log(`📤 [JADWAL] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
@@ -215,6 +220,5 @@ setInterval(async () => {
   } catch (err) {
     console.error('❌ Gagal eksekusi penjadwalan:', err.message);
   }
-}, 60 * 1000); // tiap 60 detik
-
+}, 60 * 1000);
 module.exports = client;
