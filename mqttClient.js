@@ -1,4 +1,4 @@
-mqttclient yang awal
+
 require('dotenv').config();
 const mqtt = require('mqtt');
 const { Perangkat, DataPenggunaan, LimitEnergi, Penjadwalan } = require('./models');
@@ -137,30 +137,23 @@ async function matikanBerdasarkanPrioritas(level, client) {
   
   // Mapping level ke prioritas yang akan dimatikan
   switch(level) {
-    case 3: // 60% - matikan prioritas 'Rendah'
-      prioritasArray = ['Rendah'];
-      break;
-    case 2: // 80% - matikan prioritas 'Sedang' dan 'Rendah'  
-      prioritasArray = ['Sedang', 'Rendah'];
-      break;
-    case 1: // 100% - matikan semua prioritas
-      prioritasArray = ['Tinggi', 'Sedang', 'Rendah'];
-      break;
-    default:
-      return;
+    case 3: prioritasArray = ['Rendah']; break;
+    case 2: prioritasArray = ['Sedang', 'Rendah']; break;
+    case 1: prioritasArray = ['Tinggi', 'Sedang', 'Rendah']; break;
+    default: return;
   }
-
-  const perangkatList = await Perangkat.findAll({
- const semuaPerangkat = await Perangkat.findAll();
+  const semuaPerangkat = await Perangkat.findAll();
   for (const perangkat of semuaPerangkat) {
     const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id, aktif: true } });
     if (!punyaJadwal) {
       console.log(`✅ [LIMIT BYPASS] ${perangkat.nama_perangkat} tanpa jadwal tidak dimatikan oleh limit.`);
       continue;
     }
-    if (prioritasArray.includes(perangkat.prioritas) && perangkat.status === 'ON') {
+   if (prioritasArray.includes(perangkat.prioritas) && perangkat.status === 'ON') {
       await perangkat.update({ status: 'OFF' });
-      if (perangkat.topik_kontrol) client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
+      if (perangkat.topik_kontrol) {
+        client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
+        console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
     }
   }
 }
