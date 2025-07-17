@@ -1,4 +1,4 @@
-
+?W32'w3e2
 require('dotenv').config();
 const mqtt = require('mqtt');
 const { Perangkat, DataPenggunaan, LimitEnergi, Penjadwalan } = require('./models');
@@ -209,51 +209,6 @@ setInterval(async () => {
     console.error('❌ Gagal eksekusi penjadwalan:', err.message);
   }
 }, 60 * 1000);
-// ✅ Fungsi untuk subscribe ulang topik perangkat setelah penambahan
-async function subscribeTopikBaru() {
-  const perangkatList = await Perangkat.findAll();
-  perangkatList.forEach(({ topik_mqtt, nama_perangkat }) => {
-    if (topik_mqtt) {
-      client.subscribe(topik_mqtt, (err) => {
-        if (!err) {
-          console.log(`✅ [AUTO SUBSCRIBE] ${nama_perangkat} : ${topik_mqtt}`);
-        }
-      });
-    }
-  });
-}
-setInterval(async () => {
-  console.log('🔄 Refresh subscribe perangkat...');
-  await subscribeTopikBaru();
-}, 60 * 1000);
-// ✅ Tambahan handler toggle perangkat dengan pengecekan MQTT aman
-async function togglePerangkat(req, res) {
-  try {
-    const perangkat = await Perangkat.findByPk(req.params.id);
-    if (!perangkat) return res.status(404).send('❌ Perangkat tidak ditemukan');
-    if (!perangkat.topik_kontrol) return res.status(400).send('❌ Topik kontrol belum diatur');
 
-    if (!client.connected) {
-      console.warn('❌ MQTT Client belum terhubung, tidak bisa kirim perintah');
-      return res.status(500).send('❌ MQTT tidak terhubung');
-    }
 
-    const statusBaru = perangkat.status === 'ON' ? 'OFF' : 'ON';
-    await perangkat.update({ status: statusBaru });
-
-    client.publish(perangkat.topik_kontrol, JSON.stringify({ command: statusBaru }), (err) => {
-      if (err) {
-        console.error('❌ Gagal publish MQTT:', err.message);
-        return res.status(500).send('❌ Gagal publish MQTT: ' + err.message);
-      }
-      console.log(`📤 [TOGGLE] ${perangkat.nama_perangkat} diubah ke ${statusBaru}`);
-      res.json({ status: 'sukses', statusBaru });
-    });
-
-  } catch (err) {
-    console.error('❌ Toggle error:', err.message);
-    res.status(500).send('❌ Terjadi kesalahan server: ' + err.message);
-  }
-}
-// ✅ Export fungsi agar bisa dipakai controller
-module.exports = { client, subscribeTopikBaru };
+module.exports = { client};
