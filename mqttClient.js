@@ -52,10 +52,10 @@ client.on('message', async (topic, message) => {
     return console.warn(`⚠️ Data bukan JSON dari topik "${topic}"`);
   }
 
+  // ✅ Query perangkat selalu live dari database
   const perangkat = await Perangkat.findOne({ where: { topik_mqtt: topic } });
-  if (!perangkat) return console.warn(`⚠️ Perangkat untuk topik "${topic}" tidak ditemukan`);
+  if (!perangkat) return console.warn(`⚠️ Perangkat tidak ditemukan untuk topik "${topic}"`);
 
-  // Abaikan jika hanya command
   if (data.command) {
     console.log(`📥 Command diterima dari ${perangkat.nama_perangkat}:`, data.command);
     return;
