@@ -151,24 +151,20 @@ async function matikanBerdasarkanPrioritas(level, client) {
   }
 
   const perangkatList = await Perangkat.findAll({
-    where: {
-      prioritas: { [Op.in]: prioritasArray }, // Gunakan Op.in untuk array string
-      status: 'ON'
+ const semuaPerangkat = await Perangkat.findAll();
+  for (const perangkat of semuaPerangkat) {
+    const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id, aktif: true } });
+    if (!punyaJadwal) {
+      console.log(`✅ [LIMIT BYPASS] ${perangkat.nama_perangkat} tanpa jadwal tidak dimatikan oleh limit.`);
+      continue;
     }
-  });
-
-  for (const perangkat of perangkatList) {
-    await perangkat.update({ status: 'OFF' });
-    perangkatTerblokir.add(perangkat.id);
-
-    if (perangkat.topik_kontrol) {
-      client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
-      console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat}) - Prioritas: ${perangkat.prioritas}`);
-    } else {
-      console.warn(`⚠️ Tidak ada topik_kontrol untuk ${perangkat.nama_perangkat}`);
+    if (prioritasArray.includes(perangkat.prioritas) && perangkat.status === 'ON') {
+      await perangkat.update({ status: 'OFF' });
+      if (perangkat.topik_kontrol) client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
     }
   }
 }
+
 
 // ✅ Penjadwalan otomatis tiap 60 detik
 setInterval(async () => {
