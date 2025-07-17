@@ -13,11 +13,6 @@ exports.index = async (req, res) => {
 };
 
 // FORM TAMBAH
-exports.createForm = (req, res) => {
-  res.render('perangkat/create');
-};
-
-// PROSES TAMBAH
 exports.create = async (req, res) => {
   try {
     const data = {
@@ -31,6 +26,11 @@ exports.create = async (req, res) => {
 
     await Perangkat.create(data);
     console.log(`✅ Perangkat "${data.nama_perangkat}" berhasil dibuat`);
+
+    // ✅ Subscribe langsung tanpa restart server
+    await mqttClient.subscribeTopikBaru();
+    console.log('✅ MQTT subscribe diperbarui setelah tambah perangkat');
+
     res.redirect('/perangkat');
   } catch (err) {
     console.error('❌ Gagal membuat perangkat:', err.message);
@@ -67,6 +67,11 @@ exports.edit = async (req, res) => {
 
     await perangkat.update(data);
     console.log(`✅ Perangkat "${data.nama_perangkat}" berhasil diupdate`);
+
+    // ✅ Subscribe ulang setelah edit perangkat
+    await mqttClient.subscribeTopikBaru();
+    console.log('✅ MQTT subscribe diperbarui setelah edit perangkat');
+
     res.redirect('/perangkat');
   } catch (err) {
     console.error('❌ Gagal update perangkat:', err.message);
