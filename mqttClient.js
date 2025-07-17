@@ -222,6 +222,10 @@ async function subscribeTopikBaru() {
     }
   });
 }
+setInterval(async () => {
+  console.log('🔄 Refresh subscribe perangkat...');
+  await subscribeTopikBaru();
+}, 60 * 1000);
 
 // ✅ Export fungsi agar bisa dipakai controller
 module.exports = { client, subscribeTopikBaru };
