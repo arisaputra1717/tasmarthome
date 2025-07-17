@@ -134,8 +134,6 @@ client.on('message', async (topic, message) => {
 // ✅ Fungsi untuk mematikan berdasarkan prioritas STRING
 async function matikanBerdasarkanPrioritas(level, client) {
   let prioritasArray;
-  
-  // Mapping level ke prioritas yang akan dimatikan
   switch(level) {
     case 3: prioritasArray = ['Rendah']; break;
     case 2: prioritasArray = ['Sedang', 'Rendah']; break;
@@ -146,14 +144,17 @@ async function matikanBerdasarkanPrioritas(level, client) {
   for (const perangkat of semuaPerangkat) {
     const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id, aktif: true } });
     if (!punyaJadwal) {
-      console.log(`✅ [LIMIT BYPASS] ${perangkat.nama_perangkat} tanpa jadwal tidak dimatikan oleh limit.`);
+      console.log(`✅ [LIMIT BYPASS] ${perangkat.nama_perangkat} tanpa jadwal.`);
       continue;
     }
-   if (prioritasArray.includes(perangkat.prioritas) && perangkat.status === 'ON') {
+    console.log(`▶️ [LIMIT] Evaluasi ${perangkat.nama_perangkat} | Prioritas: ${perangkat.prioritas} | Status: ${perangkat.status}`);
+
+    if (prioritasArray.includes(perangkat.prioritas) && perangkat.status === 'ON') {
       await perangkat.update({ status: 'OFF' });
       if (perangkat.topik_kontrol) {
         client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
-        console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+        console.log(`📤 [LIMIT] OFF ke ${perangkat.topik_kontrol}`);
+      }
     }
   }
 }
@@ -172,42 +173,35 @@ setInterval(async () => {
       }
     });
 
-    const perangkatAktif = jadwalAktif.map(j => j.perangkat_id);
+     const perangkatAktif = jadwalAktif.map(j => j.perangkat_id);
     const semuaPerangkat = await Perangkat.findAll();
 
     for (const perangkat of semuaPerangkat) {
       const punyaJadwal = await Penjadwalan.findOne({ where: { perangkat_id: perangkat.id, aktif: true } });
-
       if (!punyaJadwal) {
-        console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tidak punya jadwal, tidak dikontrol penjadwalan.`);
+        console.log(`✅ [BYPASS] ${perangkat.nama_perangkat} tanpa jadwal.`);
         continue;
       }
 
       const dalamJadwal = perangkatAktif.includes(perangkat.id);
+      console.log(`▶️ Penjadwalan ${perangkat.nama_perangkat} | Status: ${perangkat.status} | DalamJadwal: ${dalamJadwal}`);
 
       if (dalamJadwal && perangkat.status !== 'ON') {
-        if (!perangkatTerblokir.has(perangkat.id)) {
-          await perangkat.update({ status: 'ON' });
-          if (perangkat.topik_kontrol) {
-            client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
-            console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
-          }
-        } else {
-          console.log(`⚠️ [JADWAL] ${perangkat.nama_perangkat} diblokir karena limit, tidak bisa ON`);
+        await perangkat.update({ status: 'ON' });
+        if (perangkat.topik_kontrol) {
+          client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'ON' }));
+          console.log(`📤 [JADWAL] ON ke ${perangkat.topik_kontrol}`);
         }
-      }
-
-      if (!dalamJadwal && perangkat.status !== 'OFF') {
+      } else if (!dalamJadwal && perangkat.status !== 'OFF') {
         await perangkat.update({ status: 'OFF' });
         if (perangkat.topik_kontrol) {
           client.publish(perangkat.topik_kontrol, JSON.stringify({ command: 'OFF' }));
-          console.log(`📤 [JADWAL] OFF ke ${perangkat.topik_kontrol} (${perangkat.nama_perangkat})`);
+          console.log(`📤 [JADWAL] OFF ke ${perangkat.topik_kontrol}`);
         }
       }
     }
-
   } catch (err) {
-    console.error('❌ Gagal eksekusi penjadwalan:', err.message);
+    console.error('❌ Penjadwalan error:', err.message);
   }
 }, 60 * 1000);
 module.exports = client;
