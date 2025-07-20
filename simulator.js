@@ -3,7 +3,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 // Konfigurasi MQTT - Menggunakan broker EMQX public
-const MQTT_BROKER = 'mqtt://broker.emqx.io:1883';
+const MQTT_BROKER = 'mqtt://192.168.18.116:1883';
 const client = mqtt.connect(MQTT_BROKER);
 
 // Konfigurasi SQLite
@@ -79,39 +79,66 @@ function saveEnergyData(perangkat) {
 // Data perangkat dengan konsumsi daya yang lebih realistis
 const perangkatList = [
     {
-        id: 'kulkas',
-        topic_data: 'smart-energy/perangkat/kulkas/data',
-        topic_kontrol: 'smart-energy/perangkat/kulkas/kontrol',
+        id: 'reni',
+        topic_data: 'smart-energy/perangkat/reni/data',
+        topic_kontrol: 'smart-energy/perangkat/reni/kontrol',
         status: 'ON',
         energi_total: 0,
-        watt_range: [150, 250], // Kulkas: 150-250W
+        watt_range: [20, 25], // Kulkas: 150-250W
         multiplier: 1.5 // Multiplier untuk mempercepat konsumsi
     },
     {
-        id: 'laptop',
-        topic_data: 'smart-energy/perangkat/laptop/data',
-        topic_kontrol: 'smart-energy/perangkat/laptop/kontrol',
+        id: 'yani',
+        topic_data: 'smart-energy/perangkat/yani/data',
+        topic_kontrol: 'smart-energy/perangkat/yani/kontrol',
         status: 'ON',
         energi_total: 0,
-        watt_range: [45, 90], // Laptop: 45-90W
+        watt_range: [20, 25], // Kulkas: 150-250W
+        multiplier: 1.5 // Multiplier untuk mempercepat konsumsi
+    },
+    {
+        id: 'ari',
+        topic_data: 'smart-energy/perangkat/ari/data',
+        topic_kontrol: 'smart-energy/perangkat/ari/kontrol',
+        status: 'ON',
+        energi_total: 0,
+        watt_range: [20, 25], // Kulkas: 150-250W
+        multiplier: 1.5 // Multiplier untuk mempercepat konsumsi
+    },
+    {
+        id: 'smart',
+        topic_data: 'smart-energy/perangkat/smart/data',
+        topic_kontrol: 'smart-energy/perangkat/smart/kontrol',
+        status: 'ON',
+        energi_total: 0,
+        watt_range: [20, 25], // Kulkas: 150-250W
+        multiplier: 1.5 // Multiplier untuk mempercepat konsumsi
+    },
+    {
+        id: 'home',
+        topic_data: 'smart-energy/perangkat/home/data',
+        topic_kontrol: 'smart-energy/perangkat/home/kontrol',
+        status: 'ON',
+        energi_total: 0,
+        watt_range: [45, 50], // Laptop: 45-90W
         multiplier: 2.0 // Multiplier untuk mempercepat konsumsi
     },
     {
-        id: 'lampu',
-        topic_data: 'smart-energy/perangkat/lampu/data',
-        topic_kontrol: 'smart-energy/perangkat/lampu/kontrol',
+        id: 'tugas',
+        topic_data: 'smart-energy/perangkat/tugas/data',
+        topic_kontrol: 'smart-energy/perangkat/tugas/kontrol',
         status: 'ON',
         energi_total: 0,
-        watt_range: [15, 25], // Lampu LED: 15-25W
+        watt_range: [15, 20], // Lampu LED: 15-25W
         multiplier: 3.0 // Multiplier untuk mempercepat konsumsi
     },
     {
-        id: 'pompa',
-        topic_data: 'smart-energy/perangkat/pompa/data',
-        topic_kontrol: 'smart-energy/perangkat/pompa/kontrol',
+        id: 'akhir',
+        topic_data: 'smart-energy/perangkat/akhir/data',
+        topic_kontrol: 'smart-energy/perangkat/akhir/kontrol',
         status: 'ON',
         energi_total: 0,
-        watt_range: [370, 750], // Pompa air: 370-750W
+        watt_range: [10, 15], // Pompa air: 370-750W
         multiplier: 1.2 // Multiplier untuk mempercepat konsumsi
     }
 ];
